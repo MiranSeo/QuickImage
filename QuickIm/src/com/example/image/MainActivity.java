@@ -1,16 +1,24 @@
 package com.example.image;
 
+import java.io.BufferedInputStream;
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
+
+import org.apache.http.util.ByteArrayBuffer;
 
 import android.support.v7.app.ActionBarActivity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
 
 public class MainActivity extends ActionBarActivity {
+	private DataManager dataManager = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -21,6 +29,8 @@ public class MainActivity extends ActionBarActivity {
         Intent intent = getIntent();
         String action = intent.getAction();
         String type = intent.getType();
+        
+        dataManager = new DataManager(this);
         
         // Intent의 Action 종류에 따라 비교 후 해당 함수 수행.
         if (Intent.ACTION_SEND.equals(action) && type != null) {
@@ -39,9 +49,12 @@ public class MainActivity extends ActionBarActivity {
     // Intent의 Type이 image일 경우 수행
     void handleSendImage(Intent intent) {
         Uri imageUri = (Uri) intent.getParcelableExtra(Intent.EXTRA_STREAM);
+        String url = imageUri.toString();
         // 보내는 쪽에서 pacelable 로 구현한 객체를 intent에 넣어 전달하면 getParcelableExtra로 받습니다
         if (imageUri != null) {
             //  전달 받은 image 를 사용한다.
+        	byte[] logoImage = getLogoImage(url);
+        	dataManager.insertImage(url);
         }
     }
 
@@ -71,4 +84,25 @@ public class MainActivity extends ActionBarActivity {
         }
         return super.onOptionsItemSelected(item);
     }
+    
+    private byte[] getLogoImage(String url){
+        try {
+                URL imageUrl = new URL(url);
+                URLConnection ucon = imageUrl.openConnection();
+
+                InputStream is = ucon.getInputStream();
+                BufferedInputStream bis = new BufferedInputStream(is);
+
+                ByteArrayBuffer baf = new ByteArrayBuffer(500);
+                int current = 0;
+                while ((current = bis.read()) != -1) {
+                        baf.append((byte) current);
+                }
+
+                return baf.toByteArray();
+        } catch (Exception e) {
+                Log.d("ImageManager", "Error: " + e.toString());
+        }
+        return null;
+   }
 }
